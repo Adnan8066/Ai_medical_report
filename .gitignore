@@ -1,0 +1,36 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+.venv/
+venv/
+env/
+staticfiles/
+media/
+*.log
+
+# Environment / secrets - never commit real values
+.env
+.env.*
+!.env.example
+
+# Node / frontend / Vercel
+node_modules/
+dist/
+.vite/
+.vercel/
+npm-debug.log*
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test and coverage artefacts
+.pytest_cache/
+.coverage
+htmlcov/
+test-results/
+playwright-report/
+blob-report/

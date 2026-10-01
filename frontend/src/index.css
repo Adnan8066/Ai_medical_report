@@ -1,0 +1,24 @@
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: #f4f6f8;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.mono { font-family: "Cascadia Mono", Consolas, "Courier New", monospace; }
+
+.timeline-item { position: relative; padding-left: 28px; padding-bottom: 18px; }
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 9px; top: 22px; bottom: -4px;
+  width: 2px;
+  background: #e2e8f0;
+}
+.timeline-item:last-child::before { display: none; }

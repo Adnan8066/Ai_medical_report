@@ -1,0 +1,53 @@
+# AsterNova Hospital Intelligence Platform - local stack.
+#
+#   docker compose up --build
+#
+# Frontend: http://localhost:5173 (dev) or http://localhost:8080 (production build)
+# Backend : http://localhost:8000/api/
+#
+# Every record created by the seeder is fictional demo data.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-asternova}
+      POSTGRES_USER: ${POSTGRES_USER:-asternova}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-asternova}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-asternova}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    env_file:
+      - .env
+    environment:
+      DB_ENGINE: postgres
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend
+    volumes:
+      - backend_media:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_media:
