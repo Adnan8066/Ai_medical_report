@@ -48,7 +48,7 @@ summary.
 | Audit | Append-only trail of who did what, to which object, from which IP, with a safety-net entry for every mutating API call |
 | Search | Global search across patients, doctors, appointments, documents, departments, laboratory, medicines and bills — filtered by the caller's permissions |
 | Navigation | Indoor wayfinding with searchable destinations, a schematic floor plan and step-free route instructions |
-| Demo experience | One-command seeder, 13 documented demo logins, "DEMO DATA ONLY" indicator, presentation-friendly dashboard |
+| Demo experience | One-command seeder, 13 documented demo logins, demo-data notice in the sidebar footer, presentation-friendly dashboard |
 
 ### Editing workflows
 

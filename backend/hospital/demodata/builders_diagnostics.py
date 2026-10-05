@@ -57,9 +57,14 @@ def seed_lab_reports(patients, rng):
         orders = rng.randint(1, 3) if patient.admission_status == "admitted" else rng.randint(1, 2)
         for _ in range(orders):
             test = rng.choice(tests)
+            # Work in progress scales with age: a report ordered weeks ago is
+            # almost always signed out, so the pending queue stays proportional
+            # to today's inpatient volume instead of the whole patient list.
+            age_days = rng.randint(0, 20)
             ordered_at = timezone.now() - timedelta(
-                days=rng.randint(0, 20), hours=rng.randint(0, 23)
+                days=age_days, hours=rng.randint(0, 23)
             )
+            pending_weights = [1, 1, 1, 97] if age_days > 2 else [16, 13, 11, 60]
             status = rng.choices(
                 [
                     LabReport.Status.ORDERED,
@@ -67,7 +72,7 @@ def seed_lab_reports(patients, rng):
                     LabReport.Status.PROCESSING,
                     LabReport.Status.COMPLETED,
                 ],
-                weights=[18, 14, 12, 56],
+                weights=pending_weights,
                 k=1,
             )[0]
             numeric, result_text = _demo_result(test, rng)

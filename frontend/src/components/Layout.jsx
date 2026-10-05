@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom'
 import {
-  AppBar, Avatar, Badge, Box, Chip, Divider, Drawer, IconButton, List, ListItemButton,
+  AppBar, Avatar, Badge, Box, Divider, Drawer, IconButton, List, ListItemButton,
   ListItemIcon, ListItemText, Menu, MenuItem, Stack, Toolbar, Tooltip, Typography, useMediaQuery,
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
@@ -130,12 +130,15 @@ export default function Layout({ children }) {
   }
 
   const drawer = (
-    <Box sx={{ width: DRAWER_WIDTH }} role="navigation">
+    <Box
+      sx={{ width: DRAWER_WIDTH, height: '100%', display: 'flex', flexDirection: 'column' }}
+      role="navigation"
+    >
       <Stack
         direction="row"
         spacing={1.25}
         alignItems="center"
-        sx={{ px: 2.25, py: 2, borderBottom: '1px solid #e3e8ef' }}
+        sx={{ px: 2.25, py: 1.5, borderBottom: '1px solid #e3e8ef' }}
       >
         <Box
           sx={{
@@ -160,22 +163,7 @@ export default function Layout({ children }) {
           </Typography>
         </Box>
       </Stack>
-      <Chip
-        size="small"
-        label="DEMO DATA ONLY"
-        sx={{
-          ml: 2.25,
-          mt: 1.5,
-          mb: 1,
-          fontWeight: 700,
-          fontSize: '0.625rem',
-          letterSpacing: '.08em',
-          bgcolor: 'rgba(180, 83, 9, 0.1)',
-          color: '#b45309',
-          border: '1px solid rgba(180, 83, 9, 0.25)',
-        }}
-      />
-      <Box sx={{ overflowY: 'auto', height: 'calc(100vh - 190px)', pb: 1.5, pt: 0.5 }}>
+      <Box sx={{ overflowY: 'auto', overflowX: 'hidden', flex: 1, minHeight: 0, pb: 1.5, pt: 0.5 }}>
         {NAV_SECTIONS.map((section) => {
           const items = section.items.filter((item) => !item.module || can(item.module))
           if (!items.length) return null
@@ -187,7 +175,7 @@ export default function Layout({ children }) {
               subheader={
                 <Typography
                   variant="overline"
-                  sx={{ pl: 2.5, pt: 1.5, pb: 0.5, display: 'block', color: 'text.secondary', opacity: 0.75 }}
+                  sx={{ pl: 2.5, pt: 1.25, pb: 0.5, display: 'block', color: 'text.secondary', opacity: 0.75 }}
                 >
                   {section.label}
                 </Typography>
@@ -221,17 +209,17 @@ export default function Layout({ children }) {
       </Box>
       <Box
         sx={{
+          flexShrink: 0,
           borderTop: '1px solid #e3e8ef',
           px: 2.25,
           py: 1.25,
-          mt: 'auto',
         }}
       >
         <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
           AsterNova v1.0 · demonstration build
         </Typography>
         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-          Not for clinical use
+          Demo data only · not for clinical use
         </Typography>
       </Box>
     </Box>
@@ -288,12 +276,14 @@ export default function Layout({ children }) {
                 borderRadius: 2,
                 px: 1,
                 py: 0.25,
-                minWidth: 290,
+                minWidth: 320,
+                maxWidth: 420,
+                flex: { md: '0 1 360px' },
               }}
             >
               <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
               <InputBase
-                placeholder="Search patients, doctors, documents, bills…"
+                placeholder="Search patients, doctors, records…"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
                 sx={{ fontSize: 14, flex: 1 }}

@@ -49,12 +49,12 @@ export function formatCurrency(value, { symbol = '₹', decimals = 2 } = {}) {
   })}`
 }
 
-/** Compact money for KPI cards: ₹5.8L / ₹1.2Cr. */
+/** Compact money for KPI cards: ₹5.8 Lakhs / ₹1.2 Cr. */
 export function formatCurrencyCompact(value, symbol = '₹') {
   const amount = Number(value)
   if (value === null || value === undefined || Number.isNaN(amount)) return '—'
   if (Math.abs(amount) >= 1e7) return `${symbol}${(amount / 1e7).toFixed(2)} Cr`
-  if (Math.abs(amount) >= 1e5) return `${symbol}${(amount / 1e5).toFixed(2)} L`
+  if (Math.abs(amount) >= 1e5) return `${symbol}${(amount / 1e5).toFixed(2)} Lakhs`
   return formatCurrency(amount, { symbol, decimals: 0 })
 }
 

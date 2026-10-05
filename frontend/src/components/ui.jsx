@@ -42,17 +42,22 @@ export function PageHeader({ title, subtitle, actions, breadcrumb }) {
   )
 }
 
+// Standard operational metrics share one soft blue tint; green, amber and red
+// stay reserved for positive trend/financial values and clinical alerts.
+// Tones default to `neutral`, so an omitted tone never reintroduces colour.
+const STAT_TONE_COLOURS = {
+  neutral: '#0369a1',
+  primary: '#0369a1',
+  secondary: '#0369a1',
+  info: '#0369a1',
+  success: '#15803d',
+  warning: '#b45309',
+  error: '#b91c1c',
+}
+
 /** KPI tile with a tinted icon badge, tabular value and optional context. */
-export function StatCard({ label, value, hint, icon, tone = 'primary', onClick, badge }) {
-  const toneColour = {
-    primary: TOKENS.primary,
-    secondary: '#1d4ed8',
-    success: '#15803d',
-    warning: '#b45309',
-    error: '#b91c1c',
-    info: '#0369a1',
-    neutral: '#475569',
-  }[tone] || TOKENS.primary
+export function StatCard({ label, value, hint, icon, tone = 'neutral', onClick, badge }) {
+  const toneColour = STAT_TONE_COLOURS[tone] || STAT_TONE_COLOURS.neutral
 
   const display = typeof value === 'number' ? formatNumber(value) : value
 
@@ -141,6 +146,13 @@ const TONE_COLOURS = {
   neutral: '#475569',
 }
 
+const PRIORITY_COLOURS = {
+  critical: TONE_COLOURS.error,
+  high: TONE_COLOURS.warning,
+  medium: TONE_COLOURS.info,
+  low: TONE_COLOURS.success,
+}
+
 /** Soft tonal status pill - readable without shouting. */
 export function StatusChip({ value, label }) {
   const key = String(value || '').toLowerCase()
@@ -163,13 +175,7 @@ export function StatusChip({ value, label }) {
 }
 
 export function PriorityChip({ value, label }) {
-  const tones = {
-    critical: TONE_COLOURS.error,
-    high: TONE_COLOURS.warning,
-    medium: TONE_COLOURS.info,
-    low: TONE_COLOURS.success,
-  }
-  const colour = tones[String(value).toLowerCase()] || TONE_COLOURS.neutral
+  const colour = PRIORITY_COLOURS[String(value).toLowerCase()] || TONE_COLOURS.neutral
   return (
     <Chip
       size="small"

@@ -5,6 +5,9 @@ import { CssBaseline, ThemeProvider } from '@mui/material'
 import '@fontsource/roboto/300.css'
 import '@fontsource/roboto/400.css'
 import '@fontsource/roboto/500.css'
+// Weight 600 is used by every heading, subtitle and button in the theme, so it
+// must be loaded explicitly or the browser synthesises a fake bold.
+import '@fontsource/roboto/600.css'
 import '@fontsource/roboto/700.css'
 import App from './App.jsx'
 import theme from './theme.js'

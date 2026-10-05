@@ -132,9 +132,16 @@ class Command(BaseCommand):
 
     def _reset(self):
         """Remove the previously generated demo dataset (demo data only)."""
-        self.stdout.write(self.style.WARNING("Resetting existing demo data..."))
+        from insurance.models import InsuranceClaim, InsurancePolicy
         from patients.models import Patient
 
+        self.stdout.write(self.style.WARNING("Resetting existing demo data..."))
+
+        # Claims and policies are PROTECTed, so they must go before the
+        # patients they reference - deleting a patient first would cascade
+        # into a policy and abort the whole reset.
+        InsuranceClaim.objects.all().delete()
+        InsurancePolicy.objects.all().delete()
         Patient.objects.all().delete()
         MedicalDocument.objects.all().delete()
         Notification.objects.all().delete()
