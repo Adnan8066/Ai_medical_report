@@ -9,6 +9,10 @@ const st = (row, key = 'status') => (
 )
 const money = (value) => formatCurrency(value)
 
+const patientLookup = { endpoint: '/patients/', labelKey: (row) => `${row.name}${row.patient_id ? ` (${row.patient_id})` : ''}` }
+const doctorLookup = { endpoint: '/doctors/', labelKey: (row) => `${row.name}${row.specialization ? ` — ${row.specialization}` : ''}` }
+const departmentLookup = { endpoint: '/departments/', labelKey: (row) => `${row.name}${row.code ? ` (${row.code})` : ''}` }
+
 export const BillingPage = page({
   title: 'Billing',
   subtitle: 'Invoices, payments and outstanding balances',
@@ -33,17 +37,20 @@ export const BillingPage = page({
     { key: 'service_type', label: 'Service', options: ['consultation', 'laboratory', 'radiology', 'pharmacy', 'room_charge', 'surgery', 'procedure', 'nursing', 'other'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
   ],
   fields: [
-    { name: 'patient', label: 'Patient (ID)', type: 'number', required: true, span: 4 },
-    { name: 'doctor', label: 'Doctor (ID)', type: 'number', span: 4 },
-    { name: 'admission', label: 'Admission (ID)', type: 'number', span: 4 },
-    { name: 'date', label: 'Invoice date', type: 'date', required: true, span: 4 },
-    { name: 'discount', label: 'Discount', type: 'number', span: 4 },
-    { name: 'tax_rate', label: 'Tax rate %', type: 'number', span: 4 },
-    { name: 'insurance_amount', label: 'Insurance amount', type: 'number', span: 4 },
-    { name: 'paid_amount', label: 'Paid amount', type: 'number', span: 4 },
-    { name: 'payment_method', label: 'Payment method', type: 'select', span: 4, options: ['cash', 'card', 'upi', 'net_banking', 'insurance', 'pending'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'notes', label: 'Notes', span: 12 },
+    { section: 'Patient & reference', name: 'patient', label: 'Patient', type: 'autocomplete', required: true, span: 6, lookup: patientLookup, placeholder: 'Search patient…' },
+    { section: 'Patient & reference', name: 'doctor', label: 'Doctor', type: 'autocomplete', span: 6, lookup: doctorLookup, placeholder: 'Search doctor…' },
+    { section: 'Patient & reference', name: 'admission', label: 'Admission (ID)', type: 'number', span: 6 },
+    { section: 'Patient & reference', name: 'date', label: 'Invoice date', type: 'date', required: true, span: 6 },
+
+    { section: 'Amounts', name: 'discount', label: 'Discount', type: 'number', span: 4 },
+    { section: 'Amounts', name: 'tax_rate', label: 'Tax rate %', type: 'number', span: 4 },
+    { section: 'Amounts', name: 'insurance_amount', label: 'Insurance amount', type: 'number', span: 4 },
+    { section: 'Amounts', name: 'paid_amount', label: 'Paid amount', type: 'number', span: 6 },
+    { section: 'Amounts', name: 'payment_method', label: 'Payment method', type: 'select', span: 6, options: ['cash', 'card', 'upi', 'net_banking', 'insurance', 'pending'] },
+
+    { section: 'Service lines', name: 'notes', label: 'Notes', type: 'multiline', span: 12, minRows: 2, maxRows: 6 },
     {
+      section: 'Service lines',
       name: 'items',
       label: 'Billable services',
       type: 'items',
@@ -116,16 +123,18 @@ export const InsurancePage = page({
     { key: 'status', label: 'Status', options: ['submitted', 'under_review', 'approved', 'partially_approved', 'rejected', 'settled'] },
   ],
   fields: [
-    { name: 'policy', label: 'Policy (ID)', type: 'number', required: true, span: 4 },
-    { name: 'patient', label: 'Patient (ID)', type: 'number', required: true, span: 4 },
-    { name: 'invoice', label: 'Invoice (ID)', type: 'number', span: 4 },
-    { name: 'claim_amount', label: 'Claim amount', type: 'number', required: true, span: 4 },
-    { name: 'approved_amount', label: 'Approved amount', type: 'number', span: 4 },
-    { name: 'submitted_date', label: 'Submitted date', type: 'date', span: 4 },
-    { name: 'diagnosis_code', label: 'Diagnosis code', span: 4 },
-    { name: 'status', label: 'Status', type: 'select', span: 4, options: ['submitted', 'under_review', 'approved', 'partially_approved', 'rejected', 'settled'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'treatment_summary', label: 'Treatment summary', span: 12 },
-    { name: 'notes', label: 'Notes', multiline: true, span: 12 },
+    { section: 'Links', name: 'policy', label: 'Policy (ID)', type: 'number', required: true, span: 4 },
+    { section: 'Links', name: 'patient', label: 'Patient', type: 'autocomplete', required: true, span: 4, lookup: patientLookup, placeholder: 'Search patient…' },
+    { section: 'Links', name: 'invoice', label: 'Invoice (ID)', type: 'number', span: 4 },
+
+    { section: 'Amounts & dates', name: 'claim_amount', label: 'Claim amount', type: 'number', required: true, span: 4 },
+    { section: 'Amounts & dates', name: 'approved_amount', label: 'Approved amount', type: 'number', span: 4 },
+    { section: 'Amounts & dates', name: 'submitted_date', label: 'Submitted date', type: 'date', span: 4 },
+    { section: 'Amounts & dates', name: 'diagnosis_code', label: 'Diagnosis code', span: 6 },
+    { section: 'Amounts & dates', name: 'status', label: 'Status', type: 'select', span: 6, options: ['submitted', 'under_review', 'approved', 'partially_approved', 'rejected', 'settled'] },
+
+    { section: 'Context', name: 'treatment_summary', label: 'Treatment summary', type: 'multiline', span: 12, minRows: 2, maxRows: 6 },
+    { section: 'Context', name: 'notes', label: 'Notes', type: 'multiline', span: 12, minRows: 2, maxRows: 6 },
   ],
   detailFields: [
     { name: 'claim_number', label: 'Claim' },
@@ -162,18 +171,21 @@ export const InventoryPage = page({
     { key: 'low_stock', label: 'Alert', options: [{ value: 'true', label: 'At/below reorder level' }] },
   ],
   fields: [
-    { name: 'name', label: 'Item name', required: true, span: 6 },
-    { name: 'category', label: 'Category', type: 'select', required: true, span: 6, options: ['medical_equipment', 'surgical_supplies', 'ppe', 'laboratory_supplies', 'medicines', 'office_supplies', 'housekeeping', 'it_equipment'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'description', label: 'Description', span: 12 },
-    { name: 'unit', label: 'Unit', span: 4 },
-    { name: 'stock', label: 'Stock', type: 'number', span: 4 },
-    { name: 'reorder_level', label: 'Reorder level', type: 'number', span: 4 },
-    { name: 'unit_price', label: 'Unit price', type: 'number', span: 4 },
-    { name: 'supplier', label: 'Supplier (ID)', type: 'number', span: 4 },
-    { name: 'location', label: 'Store location', span: 4 },
-    { name: 'batch_number', label: 'Batch number', span: 6 },
-    { name: 'expiry_date', label: 'Expiry date', type: 'date', span: 6 },
-    { name: 'status', label: 'Status', type: 'select', span: 6, options: ['available', 'discontinued'].map((v) => ({ value: v, label: v })) },
+    { section: 'Identity', name: 'name', label: 'Item name', required: true, span: 6 },
+    { section: 'Identity', name: 'category', label: 'Category', type: 'select', required: true, span: 6, options: ['medical_equipment', 'surgical_supplies', 'ppe', 'laboratory_supplies', 'medicines', 'office_supplies', 'housekeeping', 'it_equipment'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
+
+    { section: 'Description', name: 'description', label: 'Description', type: 'multiline', span: 12, minRows: 2, maxRows: 6 },
+
+    { section: 'Stock & pricing', name: 'unit', label: 'Unit', span: 4 },
+    { section: 'Stock & pricing', name: 'stock', label: 'Stock', type: 'number', span: 4 },
+    { section: 'Stock & pricing', name: 'reorder_level', label: 'Reorder level', type: 'number', span: 4 },
+    { section: 'Stock & pricing', name: 'unit_price', label: 'Unit price', type: 'number', span: 12 },
+
+    { section: 'Source & storage', name: 'supplier', label: 'Supplier (ID)', type: 'number', span: 6 },
+    { section: 'Source & storage', name: 'location', label: 'Store location', span: 6 },
+    { section: 'Source & storage', name: 'batch_number', label: 'Batch number', span: 6 },
+    { section: 'Source & storage', name: 'expiry_date', label: 'Expiry date', type: 'date', span: 6 },
+    { section: 'Source & storage', name: 'status', label: 'Status', type: 'select', span: 12, options: ['available', 'discontinued'] },
   ],
   detailFields: [
     { name: 'item_code', label: 'Item code' },
@@ -201,12 +213,14 @@ export const PurchaseOrdersPage = page({
   ],
   filters: [{ key: 'status', label: 'Status', options: ['draft', 'submitted', 'approved', 'partially_received', 'received', 'cancelled'] }],
   fields: [
-    { name: 'supplier', label: 'Supplier (ID)', type: 'number', required: true, span: 4 },
-    { name: 'order_date', label: 'Order date', type: 'date', span: 4 },
-    { name: 'expected_date', label: 'Expected date', type: 'date', span: 4 },
-    { name: 'status', label: 'Status', type: 'select', span: 6, options: ['draft', 'submitted', 'approved', 'partially_received', 'received', 'cancelled'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'notes', label: 'Notes', span: 12 },
+    { section: 'Order', name: 'supplier', label: 'Supplier (ID)', type: 'number', required: true, span: 4 },
+    { section: 'Order', name: 'order_date', label: 'Order date', type: 'date', span: 4 },
+    { section: 'Order', name: 'expected_date', label: 'Expected date', type: 'date', span: 4 },
+    { section: 'Order', name: 'status', label: 'Status', type: 'select', span: 12, options: ['draft', 'submitted', 'approved', 'partially_received', 'received', 'cancelled'] },
+
+    { section: 'Order lines', name: 'notes', label: 'Notes', type: 'multiline', span: 12, minRows: 2, maxRows: 6 },
     {
+      section: 'Order lines',
       name: 'items',
       label: 'Order lines',
       type: 'items',
@@ -262,18 +276,21 @@ export const StaffPage = page({
     { key: 'status', label: 'Status', options: ['active', 'on_duty', 'off_duty', 'on_leave', 'inactive'] },
   ],
   fields: [
-    { name: 'name', label: 'Name', required: true, span: 6 },
-    { name: 'employee_id', label: 'Employee ID', required: true, span: 6 },
-    { name: 'department', label: 'Department (ID)', type: 'number', span: 4 },
-    { name: 'role', label: 'Role', type: 'select', span: 4, options: ['nurse', 'technician', 'pharmacist', 'receptionist', 'billing', 'administrator', 'housekeeping', 'security', 'radiology', 'laboratory'].map((v) => ({ value: v, label: v })) },
-    { name: 'designation', label: 'Designation', span: 4 },
-    { name: 'shift', label: 'Shift (ID)', type: 'number', span: 4 },
-    { name: 'joining_date', label: 'Joining date', type: 'date', span: 4 },
-    { name: 'contact', label: 'Contact number', span: 4 },
-    { name: 'email', label: 'Email', span: 6 },
-    { name: 'qualification', label: 'Qualification', span: 6 },
-    { name: 'status', label: 'Status', type: 'select', span: 6, options: ['active', 'on_duty', 'off_duty', 'on_leave', 'inactive'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'address', label: 'Address', span: 12 },
+    { section: 'Identity', name: 'name', label: 'Full name', required: true, span: 6 },
+    { section: 'Identity', name: 'employee_id', label: 'Employee ID', required: true, span: 6 },
+
+    { section: 'Role & department', name: 'department', label: 'Department', type: 'autocomplete', span: 6, lookup: departmentLookup, placeholder: 'Search department…' },
+    { section: 'Role & department', name: 'role', label: 'Role', type: 'select', span: 6, options: ['nurse', 'technician', 'pharmacist', 'receptionist', 'billing', 'administrator', 'housekeeping', 'security', 'radiology', 'laboratory'] },
+    { section: 'Role & department', name: 'designation', label: 'Designation', span: 6 },
+    { section: 'Role & department', name: 'shift', label: 'Shift (ID)', type: 'number', span: 6 },
+    { section: 'Role & department', name: 'joining_date', label: 'Joining date', type: 'date', span: 12 },
+
+    { section: 'Contact', name: 'contact', label: 'Contact number', span: 6 },
+    { section: 'Contact', name: 'email', label: 'Email', type: 'email', span: 6 },
+    { section: 'Contact', name: 'qualification', label: 'Qualification', span: 12 },
+
+    { section: 'Status', name: 'status', label: 'Status', type: 'select', span: 6, options: ['active', 'on_duty', 'off_duty', 'on_leave', 'inactive'] },
+    { section: 'Status', name: 'address', label: 'Address', type: 'multiline', span: 6, minRows: 2, maxRows: 6 },
   ],
   detailFields: [
     { name: 'employee_id', label: 'Employee ID' },

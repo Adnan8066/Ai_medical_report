@@ -22,31 +22,42 @@ const PATIENT_COLUMNS = [
 ]
 
 const PATIENT_FIELDS = [
-  { name: 'name', label: 'Full name', required: true, span: 6 },
-  { name: 'date_of_birth', label: 'Date of birth', type: 'date', span: 3 },
-  { name: 'gender', label: 'Gender', type: 'select', span: 3, options: [
+  // Personal information
+  { section: 'Personal information', name: 'name', label: 'Full name', required: true, span: 12 },
+  { section: 'Personal information', name: 'date_of_birth', label: 'Date of birth', type: 'date', span: 12 },
+  { section: 'Personal information', name: 'gender', label: 'Gender', type: 'select', span: 6, options: [
     { value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' },
   ] },
-  { name: 'blood_group', label: 'Blood group', type: 'select', span: 3, options: ['A+','A-','B+','B-','AB+','AB-','O+','O-'].map((v) => ({ value: v, label: v })) },
-  { name: 'phone', label: 'Phone', span: 3 },
-  { name: 'email', label: 'Email', span: 3 },
-  { name: 'registration_date', label: 'Registration date', type: 'date', span: 3 },
-  { name: 'department', label: 'Department (ID)', type: 'number', span: 3, help: 'Department database id' },
-  { name: 'assigned_doctor', label: 'Assigned doctor (ID)', type: 'number', span: 3 },
-  { name: 'patient_type', label: 'Patient type', type: 'select', span: 3, options: [
+  { section: 'Personal information', name: 'blood_group', label: 'Blood group', type: 'select', span: 6, options: ['A+','A-','B+','B-','AB+','AB-','O+','O-'].map((v) => ({ value: v, label: v })) },
+  { section: 'Personal information', name: 'phone', label: 'Phone', span: 6 },
+  { section: 'Personal information', name: 'email', label: 'Email', type: 'email', span: 6 },
+  { section: 'Personal information', name: 'registration_date', label: 'Registration date', type: 'date', span: 12 },
+
+  // Department & care
+  { section: 'Department & care', name: 'department', label: 'Department', type: 'autocomplete', span: 6, lookup: { endpoint: '/departments/', labelKey: (row) => `${row.name}${row.code ? ` (${row.code})` : ''}` }, placeholder: 'Search department…' },
+  { section: 'Department & care', name: 'assigned_doctor', label: 'Assigned doctor', type: 'autocomplete', span: 6, lookup: { endpoint: '/doctors/', labelKey: (row) => `${row.name}${row.specialization ? ` — ${row.specialization}` : ''}` }, placeholder: 'Search doctor…' },
+  { section: 'Department & care', name: 'patient_type', label: 'Patient type', type: 'select', span: 6, options: [
     'opd','outpatient','inpatient','emergency','icu','discharged','follow_up','scheduled',
-  ].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-  { name: 'current_status', label: 'Status', type: 'select', span: 3, options: [
+  ] },
+  { section: 'Department & care', name: 'current_status', label: 'Status', type: 'select', span: 6, options: [
     'registered','waiting','in_consultation','admitted','under_treatment','stable','critical',
     'ready_for_discharge','discharged','follow_up',
-  ].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-  { name: 'address', label: 'Address', span: 6 },
-  { name: 'emergency_contact_name', label: 'Emergency contact', span: 3 },
-  { name: 'emergency_contact_phone', label: 'Emergency phone', span: 3 },
-  { name: 'insurance_provider', label: 'Insurance provider', span: 4 },
-  { name: 'insurance_policy_number', label: 'Policy number', span: 4 },
-  { name: 'allergies', label: 'Allergies (comma separated)', span: 4 },
-  { name: 'medical_history', label: 'Medical history', multiline: true, span: 12 },
+  ] },
+
+  // Address
+  { section: 'Address', name: 'address', label: 'Address', type: 'multiline', span: 12, minRows: 3, maxRows: 6, placeholder: 'Street, city, PIN code…' },
+
+  // Emergency contact
+  { section: 'Emergency contact', name: 'emergency_contact_name', label: 'Contact name', span: 6 },
+  { section: 'Emergency contact', name: 'emergency_contact_phone', label: 'Contact phone', span: 6 },
+
+  // Insurance
+  { section: 'Insurance', name: 'insurance_provider', label: 'Insurance provider', span: 6 },
+  { section: 'Insurance', name: 'insurance_policy_number', label: 'Policy number', span: 6 },
+
+  // Clinical details
+  { section: 'Clinical details', name: 'allergies', label: 'Allergies', placeholder: 'Comma separated…', span: 12 },
+  { section: 'Clinical details', name: 'medical_history', label: 'Medical history', type: 'multiline', span: 12, minRows: 4, maxRows: 10, placeholder: 'Past conditions, surgeries, chronic illnesses…' },
 ]
 
 export function PatientsList() {

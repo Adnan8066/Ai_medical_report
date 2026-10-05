@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
-  Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider,
-  Grid, IconButton, MenuItem, Stack, Table, TableBody, TableCell, TableHead, TableRow,
-  TextField, Tooltip, Typography,
+  Alert, Autocomplete, Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider,
+  FormControl, FormHelperText, Grid, IconButton, InputLabel, MenuItem, Select, Stack,
+  Table, TableBody, TableCell, TableHead, TableRow, TextField, Tooltip, Typography,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import CloseIcon from '@mui/icons-material/Close'
 import DeleteIcon from '@mui/icons-material/Delete'
 import { useNavigate } from 'react-router-dom'
 import DataTable from './DataTable.jsx'
@@ -34,6 +35,37 @@ export default function ResourcePage({ config }) {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
   const [actionBusy, setActionBusy] = useState(null)
+  const [autocompleteOptions, setAutocompleteOptions] = useState({})
+
+  useEffect(() => {
+    if (!formOpen) return undefined
+    const lookupFields = (config.fields || []).filter((field) => field.lookup)
+    if (!lookupFields.length) return undefined
+    const cancelled = { value: false }
+    const fetches = lookupFields.map(async (field) => {
+      const endpoint = typeof field.lookup === 'string' ? field.lookup : field.lookup.endpoint
+      try {
+        const { data } = await api.get(endpoint)
+        if (cancelled.value) return
+        const rows = Array.isArray(data) ? data : data.results || []
+        const normalised = rows.map((row) => ({
+          id: row.id,
+          label: field.lookup?.labelKey
+            ? field.lookup.labelKey(row)
+            : row.name || row.label || row.title || row.full_name || String(row.id),
+          raw: row,
+        }))
+        setAutocompleteOptions((current) => ({ ...current, [field.name]: normalised }))
+      } catch (_error) {
+        if (!cancelled.value) {
+          setAutocompleteOptions((current) => ({ ...current, [field.name]: [] }))
+        }
+      }
+    })
+    return () => {
+      cancelled.value = true
+    }
+  }, [formOpen, config.fields])
 
   const params = useMemo(() => {
     const next = { ...(config.baseParams || {}) }
@@ -52,6 +84,7 @@ export default function ResourcePage({ config }) {
     const initial = { ...(config.defaultValues || {}) }
     ;(config.fields || []).forEach((field) => {
       if (field.type === 'items' && !initial[field.name]) initial[field.name] = []
+      if (field.type === 'autocomplete') initial[field.name] = null
     })
     setFormValues(initial)
     setFormError(null)
@@ -62,6 +95,12 @@ export default function ResourcePage({ config }) {
     setEditing(row)
     const values = {}
     ;(config.fields || []).forEach((field) => {
+      if (field.type === 'autocomplete') {
+        const lookupId = row[`${field.name}`] ?? row[`${field.name}_id`] ?? null
+        values[`${field.name}_id`] = lookupId
+        values[field.name] = null
+        return
+      }
       values[field.name] = row[field.name] ?? ''
     })
     ;(config.fields || []).forEach((field) => {
@@ -80,6 +119,12 @@ export default function ResourcePage({ config }) {
     try {
       const payload = {}
       ;(config.fields || []).forEach((field) => {
+        if (field.type === 'autocomplete') {
+          const selected = formValues[field.name]
+          const id = selected?.id ?? selected?.value ?? null
+          if (id !== null && id !== undefined && id !== '') payload[field.name] = id
+          return
+        }
         const value = formValues[field.name]
         if (field.type === 'items') {
           const rows = (value || []).filter((item) =>
@@ -211,69 +256,47 @@ export default function ResourcePage({ config }) {
         />
       </SectionCard>
 
-      <Dialog open={formOpen} onClose={() => setFormOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>{editing ? `Edit ${config.title}` : config.createLabel || `New ${config.title}`}</DialogTitle>
+      <Dialog
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 3, pt: 2.5, pb: 1 }}>
+          <Box>
+            <Typography variant="overline" color="text.secondary" sx={{ display: 'block', lineHeight: 1.6 }}>
+              {config.breadcrumb || config.title}
+            </Typography>
+            <Typography variant="h6" sx={{ lineHeight: 1.25 }}>
+              {editing ? `Edit ${config.title.toLowerCase().replace(/^./, (c) => c.toUpperCase())}` : (config.createLabel || `New ${config.title}`)}
+            </Typography>
+          </Box>
+          <IconButton onClick={() => setFormOpen(false)} size="small" aria-label="Close dialog">
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Stack>
         <Divider />
-        <DialogContent>
+        <DialogContent sx={{ pt: 2.5 }}>
           {formError ? (
-            <Box sx={{ mb: 2, color: 'error.main', typography: 'body2' }}>{formError}</Box>
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {formError}
+            </Alert>
           ) : null}
-          <Grid container spacing={2} sx={{ mt: 0.5 }}>
-            {(config.fields || []).map((field) => (
-              <Grid size={{ xs: 12, sm: field.span || 6 }} key={field.name}>
-                {field.type === 'items' ? (
-                  <ItemsField
-                    field={field}
-                    rows={formValues[field.name] || []}
-                    onChange={(rows) =>
-                      setFormValues((current) => ({ ...current, [field.name]: rows }))
-                    }
-                  />
-                ) : field.type === 'select' ? (
-                  <TextField
-                    select
-                    fullWidth
-                    size="small"
-                    label={field.label}
-                    required={field.required}
-                    value={formValues[field.name] ?? ''}
-                    onChange={(event) =>
-                      setFormValues((current) => ({ ...current, [field.name]: event.target.value }))
-                    }
-                    helperText={field.help}
-                  >
-                    <MenuItem value="">—</MenuItem>
-                    {(field.options || []).map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                ) : (
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label={field.label}
-                    required={field.required}
-                    type={field.type || 'text'}
-                    multiline={field.multiline}
-                    minRows={field.multiline ? 2 : undefined}
-                    InputLabelProps={field.type === 'date' ? { shrink: true } : undefined}
-                    value={formValues[field.name] ?? ''}
-                    onChange={(event) =>
-                      setFormValues((current) => ({ ...current, [field.name]: event.target.value }))
-                    }
-                    helperText={field.help}
-                  />
-                )}
-              </Grid>
-            ))}
-          </Grid>
+          {renderFormSections(config.fields || [], formValues, setFormValues, autocompleteOptions)}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setFormOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={submit} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
+        <Divider />
+        <DialogActions sx={{ px: 3, py: 1.75, justifyContent: 'flex-end' }}>
+          <Button onClick={() => setFormOpen(false)} disabled={saving} sx={{ textTransform: 'none', px: 2.5 }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={submit}
+            disabled={saving}
+            sx={{ textTransform: 'none', px: 3, boxShadow: 'none' }}
+          >
+            {saving ? 'Saving…' : editing ? 'Save changes' : 'Create record'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -312,6 +335,236 @@ export default function ResourcePage({ config }) {
       </Dialog>
       {user ? null : null}
     </Box>
+  )
+}
+
+function labelCase(value) {
+  if (!value) return ''
+  const upper = { opd: 'OPD', icu: 'ICU', ot: 'OT', hiv: 'HIV', dna: 'DNA', er: 'ER' }
+  const key = String(value).toLowerCase()
+  if (upper[key]) return upper[key]
+  return key
+    .split('_')
+    .map((part, index) => (index === 0 ? part[0]?.toUpperCase() + part.slice(1) : part))
+    .join(' ')
+}
+
+function DateField({ field, value, onChange }) {
+  const current = value || ''
+  const [year, month, day] = current ? current.split('-') : ['', '', '']
+  const years = Array.from({ length: 100 }, (_v, index) => `${new Date().getFullYear() - index}`)
+  const months = [
+    { value: '01', label: 'January' },
+    { value: '02', label: 'February' },
+    { value: '03', label: 'March' },
+    { value: '04', label: 'April' },
+    { value: '05', label: 'May' },
+    { value: '06', label: 'June' },
+    { value: '07', label: 'July' },
+    { value: '08', label: 'August' },
+    { value: '09', label: 'September' },
+    { value: '10', label: 'October' },
+    { value: '11', label: 'November' },
+    { value: '12', label: 'December' },
+  ]
+  const daysInMonth = (y, m) => (m ? new Date(Number(y || 0), Number(m), 0).getDate() : 31)
+  const dayOptions = Array.from({ length: daysInMonth(year, month) }, (_v, index) => `${index + 1}`)
+
+  const emit = (nextYear, nextMonth, nextDay) => {
+    if (!nextYear || !nextMonth || !nextDay) {
+      onChange('')
+      return
+    }
+    onChange(`${nextYear}-${nextMonth.padStart(2, '0')}-${nextDay.padStart(2, '0')}`)
+  }
+
+  return (
+    <FormControl fullWidth size="small" required={field.required} sx={{ minWidth: 0 }}>
+      <InputLabel shrink htmlFor={`${field.name}-date`}>{field.label}</InputLabel>
+      <Stack direction="row" spacing={1} sx={{ pt: 1, minWidth: 0 }}>
+        <Select
+          id={`${field.name}-date`}
+          notched
+          displayEmpty
+          value={day}
+          onChange={(event) => emit(year, month, event.target.value)}
+          renderValue={(selected) => (selected ? selected : <em style={{ color: '#94a3b8', fontStyle: 'normal' }}>DD</em>)}
+          sx={{ flex: '1 1 80px', minWidth: 80, '& .MuiSelect-select': { py: 1 } }}
+        >
+          <MenuItem value=""><em>Day</em></MenuItem>
+          {dayOptions.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+        </Select>
+        <Select
+          notched
+          displayEmpty
+          value={month}
+          onChange={(event) => emit(year, event.target.value, day)}
+          renderValue={(selected) => (selected ? months.find((m) => m.value === selected)?.label : <em style={{ color: '#94a3b8', fontStyle: 'normal' }}>Month</em>)}
+          sx={{ flex: '2 1 140px', minWidth: 120, '& .MuiSelect-select': { py: 1 } }}
+        >
+          <MenuItem value=""><em>Month</em></MenuItem>
+          {months.map((m) => <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>)}
+        </Select>
+        <Select
+          notched
+          displayEmpty
+          value={year}
+          onChange={(event) => emit(event.target.value, month, day)}
+          renderValue={(selected) => (selected ? selected : <em style={{ color: '#94a3b8', fontStyle: 'normal' }}>YYYY</em>)}
+          sx={{ flex: '1.2 1 100px', minWidth: 100, '& .MuiSelect-select': { py: 1 } }}
+        >
+          <MenuItem value=""><em>Year</em></MenuItem>
+          {years.map((y) => <MenuItem key={y} value={y}>{y}</MenuItem>)}
+        </Select>
+      </Stack>
+      {field.help ? <FormHelperText>{field.help}</FormHelperText> : null}
+    </FormControl>
+  )
+}
+
+function renderFormSection(title, fields, formValues, setFormValues, autocompleteOptions) {
+  if (!fields.length) return null
+  return (
+    <Box sx={{ mb: 3 }}>
+      <Typography
+        variant="subtitle2"
+        sx={{ mb: 1.25, color: 'text.primary', fontWeight: 600 }}
+      >
+        {title}
+      </Typography>
+      <Grid container spacing={2}>
+        {fields.map((field) => (
+          <Grid size={{ xs: 12, sm: Math.min(12, field.span || 6) }} key={field.name} sx={{ minWidth: 0 }}>
+            {renderFormField(field, formValues, setFormValues, autocompleteOptions)}
+          </Grid>
+        ))}
+      </Grid>
+    </Box>
+  )
+}
+
+function renderFormSections(fields, formValues, setFormValues, autocompleteOptions) {
+  const groups = new Map()
+  fields.forEach((field) => {
+    const sectionTitle = field.section || 'Details'
+    if (!groups.has(sectionTitle)) groups.set(sectionTitle, [])
+    groups.get(sectionTitle).push(field)
+  })
+  return Array.from(groups.entries()).map(([title, items]) => (
+    <Box key={title}>{renderFormSection(title, items, formValues, setFormValues, autocompleteOptions)}</Box>
+  ))
+}
+
+function renderFormField(field, formValues, setFormValues, autocompleteOptions) {
+  const sharedProps = {
+    fullWidth: true,
+    size: 'small',
+    label: field.label,
+    required: field.required,
+    InputLabelProps: { shrink: true },
+    helperText: field.help,
+  }
+
+  if (field.type === 'items') {
+    return (
+      <ItemsField
+        field={field}
+        rows={formValues[field.name] || []}
+        onChange={(rows) => setFormValues((current) => ({ ...current, [field.name]: rows }))}
+      />
+    )
+  }
+
+  if (field.type === 'autocomplete') {
+    const options = autocompleteOptions[field.name] || []
+    const currentValue = formValues[field.name] || null
+    return (
+      <Autocomplete
+        options={options}
+        value={currentValue}
+        isOptionEqualToValue={(option, value) => option?.id === value?.id}
+        getOptionLabel={(option) => option?.label || ''}
+        onChange={(_event, selected) =>
+          setFormValues((current) => ({ ...current, [field.name]: selected }))
+        }
+        renderInput={(params) => (
+          <TextField
+            {...params}
+            {...sharedProps}
+            placeholder={field.placeholder || `Search ${field.label.toLowerCase()}…`}
+          />
+        )}
+      />
+    )
+  }
+
+  if (field.type === 'select') {
+    const value = formValues[field.name] ?? ''
+    return (
+      <FormControl fullWidth size="small" required={field.required}>
+        <InputLabel id={`${field.name}-label`} shrink>{field.label}</InputLabel>
+        <Select
+          labelId={`${field.name}-label`}
+          label={field.label}
+          notched
+          displayEmpty
+          value={value}
+          onChange={(event) =>
+            setFormValues((current) => ({ ...current, [field.name]: event.target.value }))
+          }
+        >
+          <MenuItem value=""><em>— Select —</em></MenuItem>
+          {(field.options || []).map((option) => {
+            const optValue = typeof option === 'string' ? option : option.value
+            const optLabel = typeof option === 'string' ? labelCase(option) : option.label
+            return (
+              <MenuItem key={optValue} value={optValue} sx={{ textTransform: 'capitalize' }}>
+                {optLabel}
+              </MenuItem>
+            )
+          })}
+        </Select>
+        {field.help ? <FormHelperText>{field.help}</FormHelperText> : null}
+      </FormControl>
+    )
+  }
+
+  if (field.type === 'date') {
+    return (
+      <DateField
+        field={field}
+        value={formValues[field.name] ?? ''}
+        onChange={(next) => setFormValues((current) => ({ ...current, [field.name]: next }))}
+      />
+    )
+  }
+
+  if (field.type === 'multiline' || field.multiline) {
+    return (
+      <TextField
+        {...sharedProps}
+        multiline
+        minRows={field.minRows || 3}
+        maxRows={field.maxRows || 8}
+        placeholder={field.placeholder}
+        value={formValues[field.name] ?? ''}
+        onChange={(event) =>
+          setFormValues((current) => ({ ...current, [field.name]: event.target.value }))
+        }
+      />
+    )
+  }
+
+  return (
+    <TextField
+      {...sharedProps}
+      type="text"
+      placeholder={field.placeholder}
+      value={formValues[field.name] ?? ''}
+      onChange={(event) =>
+        setFormValues((current) => ({ ...current, [field.name]: event.target.value }))
+      }
+    />
   )
 }
 

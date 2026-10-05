@@ -9,6 +9,10 @@ const st = (row, key = 'status') => (
 )
 const money = (value) => formatCurrency(value)
 
+const patientLookup = { endpoint: '/patients/', labelKey: (row) => `${row.name}${row.patient_id ? ` (${row.patient_id})` : ''}` }
+const doctorLookup = { endpoint: '/doctors/', labelKey: (row) => `${row.name}${row.specialization ? ` — ${row.specialization}` : ''}` }
+const departmentLookup = { endpoint: '/departments/', labelKey: (row) => `${row.name}${row.code ? ` (${row.code})` : ''}` }
+
 export const AdmissionsPage = page({
   title: 'Admissions & IPD',
   subtitle: 'Inpatient stays, ward allocation and discharge status',
@@ -28,17 +32,19 @@ export const AdmissionsPage = page({
   ],
   filters: [{ key: 'status', label: 'Status', options: ['admitted', 'under_treatment', 'ready_for_discharge', 'discharged', 'transferred'] }],
   fields: [
-    { name: 'patient', label: 'Patient (ID)', type: 'number', required: true, span: 4 },
-    { name: 'doctor', label: 'Doctor (ID)', type: 'number', required: true, span: 4 },
-    { name: 'department', label: 'Department (ID)', type: 'number', span: 4 },
-    { name: 'admission_date', label: 'Admission date/time', required: true, span: 4, help: 'YYYY-MM-DD HH:MM' },
-    { name: 'expected_discharge_date', label: 'Expected discharge', type: 'date', span: 4 },
-    { name: 'bed', label: 'Bed (ID)', type: 'number', span: 4, help: 'Occupies the bed automatically' },
-    { name: 'nurse', label: 'Nurse (staff ID)', type: 'number', span: 4 },
-    { name: 'admission_reason', label: 'Reason', span: 8 },
-    { name: 'diagnosis', label: 'Provisional diagnosis', span: 6 },
-    { name: 'status', label: 'Status', type: 'select', span: 6, options: ['admitted', 'under_treatment', 'ready_for_discharge', 'discharged'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'treatment_plan', label: 'Treatment plan', multiline: true, span: 12 },
+    { section: 'Patient & clinician', name: 'patient', label: 'Patient', type: 'autocomplete', required: true, span: 6, lookup: patientLookup, placeholder: 'Search patient…' },
+    { section: 'Patient & clinician', name: 'doctor', label: 'Doctor', type: 'autocomplete', required: true, span: 6, lookup: doctorLookup, placeholder: 'Search doctor…' },
+    { section: 'Patient & clinician', name: 'department', label: 'Department', type: 'autocomplete', span: 12, lookup: departmentLookup, placeholder: 'Search department…' },
+
+    { section: 'Stay schedule', name: 'admission_date', label: 'Admission date/time', required: true, span: 6, placeholder: 'YYYY-MM-DD HH:MM', help: 'YYYY-MM-DD HH:MM' },
+    { section: 'Stay schedule', name: 'expected_discharge_date', label: 'Expected discharge', type: 'date', span: 6 },
+    { section: 'Stay schedule', name: 'bed', label: 'Bed ID', type: 'number', span: 6, help: 'Occupies the bed automatically' },
+    { section: 'Stay schedule', name: 'nurse', label: 'Nurse (staff ID)', type: 'number', span: 6 },
+
+    { section: 'Clinical context', name: 'admission_reason', label: 'Reason', type: 'multiline', span: 12, minRows: 2, maxRows: 6 },
+    { section: 'Clinical context', name: 'diagnosis', label: 'Provisional diagnosis', span: 6 },
+    { section: 'Clinical context', name: 'status', label: 'Status', type: 'select', span: 6, options: ['admitted', 'under_treatment', 'ready_for_discharge', 'discharged'] },
+    { section: 'Clinical context', name: 'treatment_plan', label: 'Treatment plan', type: 'multiline', span: 12, minRows: 3, maxRows: 10 },
   ],
   detailFields: [
     { name: 'admission_id', label: 'Admission' },
@@ -73,17 +79,20 @@ export const DischargePage = page({
   ],
   filters: [{ key: 'status', label: 'Status', options: ['draft', 'pending_approval', 'approved', 'completed'] }],
   fields: [
-    { name: 'patient', label: 'Patient (ID)', type: 'number', required: true, span: 4 },
-    { name: 'admission', label: 'Admission (ID)', type: 'number', span: 4 },
-    { name: 'doctor', label: 'Doctor (ID)', type: 'number', span: 4 },
-    { name: 'discharge_date', label: 'Discharge date/time', span: 4, help: 'YYYY-MM-DD HH:MM' },
-    { name: 'follow_up_date', label: 'Follow-up date', type: 'date', span: 4 },
-    { name: 'condition_on_discharge', label: 'Condition', span: 4 },
-    { name: 'diagnosis_summary', label: 'Diagnosis summary', multiline: true, span: 12 },
-    { name: 'procedures', label: 'Procedures', span: 6 },
-    { name: 'medications', label: 'Medications on discharge', multiline: true, span: 12 },
-    { name: 'follow_up_instructions', label: 'Follow-up instructions', multiline: true, span: 12 },
-    { name: 'status', label: 'Status', type: 'select', span: 6, options: ['draft', 'pending_approval', 'approved', 'completed'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
+    { section: 'Links', name: 'patient', label: 'Patient', type: 'autocomplete', required: true, span: 6, lookup: patientLookup, placeholder: 'Search patient…' },
+    { section: 'Links', name: 'admission', label: 'Admission (ID)', type: 'number', span: 6 },
+    { section: 'Links', name: 'doctor', label: 'Doctor', type: 'autocomplete', span: 12, lookup: doctorLookup, placeholder: 'Search doctor…' },
+
+    { section: 'Schedule', name: 'discharge_date', label: 'Discharge date/time', span: 6, placeholder: 'YYYY-MM-DD HH:MM', help: 'YYYY-MM-DD HH:MM' },
+    { section: 'Schedule', name: 'follow_up_date', label: 'Follow-up date', type: 'date', span: 6 },
+    { section: 'Schedule', name: 'condition_on_discharge', label: 'Condition on discharge', span: 12 },
+
+    { section: 'Clinical summary', name: 'diagnosis_summary', label: 'Diagnosis summary', type: 'multiline', span: 12, minRows: 3, maxRows: 10 },
+    { section: 'Clinical summary', name: 'procedures', label: 'Procedures', type: 'multiline', span: 12, minRows: 2, maxRows: 6 },
+
+    { section: 'Discharge plan', name: 'medications', label: 'Medications on discharge', type: 'multiline', span: 12, minRows: 2, maxRows: 8 },
+    { section: 'Discharge plan', name: 'follow_up_instructions', label: 'Follow-up instructions', type: 'multiline', span: 12, minRows: 2, maxRows: 8 },
+    { section: 'Discharge plan', name: 'status', label: 'Status', type: 'select', span: 12, options: ['draft', 'pending_approval', 'approved', 'completed'] },
   ],
   rowActions: [
     {
@@ -136,14 +145,15 @@ export const LaboratoryPage = page({
     { key: 'flag', label: 'Flag', options: ['normal', 'high', 'low', 'critical', 'unknown'] },
   ],
   fields: [
-    { name: 'patient', label: 'Patient (ID)', type: 'number', required: true, span: 4 },
-    { name: 'doctor', label: 'Doctor (ID)', type: 'number', span: 4 },
-    { name: 'test', label: 'Test (ID)', type: 'number', span: 4 },
-    { name: 'status', label: 'Status', type: 'select', span: 4, options: ['ordered', 'sample_collected', 'processing', 'completed'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'result', label: 'Result', span: 4 },
-    { name: 'numeric_value', label: 'Numeric value', span: 4, help: 'Used to compute the normal/high/low flag' },
-    { name: 'reference_range', label: 'Reference range', span: 6 },
-    { name: 'remarks', label: 'Remarks', span: 6 },
+    { section: 'Order', name: 'patient', label: 'Patient', type: 'autocomplete', required: true, span: 6, lookup: patientLookup, placeholder: 'Search patient…' },
+    { section: 'Order', name: 'doctor', label: 'Doctor', type: 'autocomplete', span: 6, lookup: doctorLookup, placeholder: 'Search doctor…' },
+    { section: 'Order', name: 'test', label: 'Test (ID)', type: 'number', required: true, span: 6 },
+    { section: 'Order', name: 'status', label: 'Status', type: 'select', span: 6, options: ['ordered', 'sample_collected', 'processing', 'completed'] },
+
+    { section: 'Result', name: 'result', label: 'Result', span: 6 },
+    { section: 'Result', name: 'numeric_value', label: 'Numeric value', type: 'number', span: 6, help: 'Used to compute the normal/high/low flag' },
+    { section: 'Result', name: 'reference_range', label: 'Reference range', span: 6 },
+    { section: 'Result', name: 'remarks', label: 'Remarks', span: 6 },
   ],
   detailFields: [
     { name: 'lab_id', label: 'Lab ID' },
@@ -176,17 +186,19 @@ export const RadiologyPage = page({
     { key: 'status', label: 'Status', options: ['ordered', 'scheduled', 'in_progress', 'completed', 'cancelled'] },
   ],
   fields: [
-    { name: 'patient', label: 'Patient (ID)', type: 'number', required: true, span: 4 },
-    { name: 'doctor', label: 'Referring doctor (ID)', type: 'number', span: 4 },
-    { name: 'scan_type', label: 'Study type', type: 'select', required: true, span: 4, options: ['xray', 'ct', 'mri', 'ultrasound', 'ecg', 'echo', 'mammography', 'pet'].map((v) => ({ value: v, label: v.toUpperCase() })) },
-    { name: 'body_part', label: 'Body part', span: 4 },
-    { name: 'appointment_date', label: 'Appointment', span: 4, help: 'YYYY-MM-DD HH:MM' },
-    { name: 'price', label: 'Price', type: 'number', span: 4 },
-    { name: 'radiologist_name', label: 'Radiologist', span: 6 },
-    { name: 'status', label: 'Status', type: 'select', span: 6, options: ['ordered', 'scheduled', 'in_progress', 'completed'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'findings', label: 'Findings', multiline: true, span: 12 },
-    { name: 'impression', label: 'Impression', span: 12 },
-    { name: 'report', label: 'Full report', multiline: true, span: 12 },
+    { section: 'Order', name: 'patient', label: 'Patient', type: 'autocomplete', required: true, span: 6, lookup: patientLookup, placeholder: 'Search patient…' },
+    { section: 'Order', name: 'doctor', label: 'Referring doctor', type: 'autocomplete', span: 6, lookup: doctorLookup, placeholder: 'Search doctor…' },
+    { section: 'Order', name: 'scan_type', label: 'Study type', type: 'select', required: true, span: 6, options: ['xray', 'ct', 'mri', 'ultrasound', 'ecg', 'echo', 'mammography', 'pet'] },
+    { section: 'Order', name: 'body_part', label: 'Body part', span: 6 },
+
+    { section: 'Schedule & cost', name: 'appointment_date', label: 'Appointment', span: 6, placeholder: 'YYYY-MM-DD HH:MM', help: 'YYYY-MM-DD HH:MM' },
+    { section: 'Schedule & cost', name: 'price', label: 'Price', type: 'number', span: 6 },
+    { section: 'Schedule & cost', name: 'radiologist_name', label: 'Radiologist', span: 6 },
+    { section: 'Schedule & cost', name: 'status', label: 'Status', type: 'select', span: 6, options: ['ordered', 'scheduled', 'in_progress', 'completed'] },
+
+    { section: 'Report', name: 'findings', label: 'Findings', type: 'multiline', span: 12, minRows: 2, maxRows: 8 },
+    { section: 'Report', name: 'impression', label: 'Impression', type: 'multiline', span: 12, minRows: 2, maxRows: 6 },
+    { section: 'Report', name: 'report', label: 'Full report', type: 'multiline', span: 12, minRows: 3, maxRows: 12 },
   ],
   detailFields: [
     { name: 'scan_id', label: 'Scan ID' },
@@ -222,20 +234,23 @@ export const PharmacyPage = page({
     { key: 'expiring', label: 'Expiry', options: [{ value: 'true', label: 'Expiring within 90 days' }] },
   ],
   fields: [
-    { name: 'name', label: 'Medicine name', required: true, span: 6 },
-    { name: 'generic_name', label: 'Generic name', span: 6 },
-    { name: 'category', label: 'Category', type: 'select', span: 4, options: ['antibiotic', 'analgesic', 'cardiovascular', 'antidiabetic', 'respiratory', 'gastrointestinal', 'neurological', 'vitamin', 'vaccine', 'iv_fluid', 'topical', 'other'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'manufacturer', label: 'Manufacturer', span: 4 },
-    { name: 'batch_number', label: 'Batch number', span: 4 },
-    { name: 'expiry_date', label: 'Expiry date', type: 'date', span: 4 },
-    { name: 'stock', label: 'Stock', type: 'number', span: 4 },
-    { name: 'reorder_level', label: 'Reorder level', type: 'number', span: 4 },
-    { name: 'unit', label: 'Unit', span: 4 },
-    { name: 'price', label: 'Selling price', type: 'number', span: 4 },
-    { name: 'cost_price', label: 'Cost price', type: 'number', span: 4 },
-    { name: 'prescription_required', label: 'Prescription required', type: 'select', span: 4, options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
-    { name: 'storage', label: 'Storage', span: 6 },
-    { name: 'status', label: 'Status', type: 'select', span: 6, options: ['available', 'discontinued'].map((v) => ({ value: v, label: v })), help: 'Stock-driven statuses are calculated automatically' },
+    { section: 'Identity', name: 'name', label: 'Medicine name', required: true, span: 6 },
+    { section: 'Identity', name: 'generic_name', label: 'Generic name', span: 6 },
+    { section: 'Identity', name: 'category', label: 'Category', type: 'select', span: 6, options: ['antibiotic', 'analgesic', 'cardiovascular', 'antidiabetic', 'respiratory', 'gastrointestinal', 'neurological', 'vitamin', 'vaccine', 'iv_fluid', 'topical', 'other'] },
+    { section: 'Identity', name: 'manufacturer', label: 'Manufacturer', span: 6 },
+
+    { section: 'Stock & batch', name: 'batch_number', label: 'Batch number', span: 6 },
+    { section: 'Stock & batch', name: 'expiry_date', label: 'Expiry date', type: 'date', span: 6 },
+    { section: 'Stock & batch', name: 'stock', label: 'Stock', type: 'number', span: 4 },
+    { section: 'Stock & batch', name: 'reorder_level', label: 'Reorder level', type: 'number', span: 4 },
+    { section: 'Stock & batch', name: 'unit', label: 'Unit', span: 4 },
+
+    { section: 'Pricing & policy', name: 'price', label: 'Selling price', type: 'number', span: 4 },
+    { section: 'Pricing & policy', name: 'cost_price', label: 'Cost price', type: 'number', span: 4 },
+    { section: 'Pricing & policy', name: 'prescription_required', label: 'Prescription required', type: 'select', span: 4, options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] },
+
+    { section: 'Storage & status', name: 'storage', label: 'Storage', span: 6 },
+    { section: 'Storage & status', name: 'status', label: 'Status', type: 'select', span: 6, options: ['available', 'discontinued'], help: 'Stock-driven statuses are calculated automatically' },
   ],
   detailFields: [
     { name: 'medicine_id', label: 'Medicine ID' },
@@ -271,12 +286,14 @@ export const PrescriptionsPage = page({
   ],
   filters: [{ key: 'status', label: 'Status', options: ['pending', 'partially_dispensed', 'dispensed', 'cancelled'] }],
   fields: [
-    { name: 'patient', label: 'Patient (ID)', type: 'number', required: true, span: 4 },
-    { name: 'doctor', label: 'Doctor (ID)', type: 'number', span: 4 },
-    { name: 'date', label: 'Date', type: 'date', span: 4 },
-    { name: 'notes', label: 'Notes', multiline: true, span: 12 },
-    { name: 'status', label: 'Status', type: 'select', span: 6, options: ['pending', 'partially_dispensed', 'dispensed', 'cancelled'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
+    { section: 'Order', name: 'patient', label: 'Patient', type: 'autocomplete', required: true, span: 6, lookup: patientLookup, placeholder: 'Search patient…' },
+    { section: 'Order', name: 'doctor', label: 'Doctor', type: 'autocomplete', span: 6, lookup: doctorLookup, placeholder: 'Search doctor…' },
+    { section: 'Order', name: 'date', label: 'Date', type: 'date', span: 6 },
+    { section: 'Order', name: 'status', label: 'Status', type: 'select', span: 6, options: ['pending', 'partially_dispensed', 'dispensed', 'cancelled'] },
+
+    { section: 'Prescribed medicines', name: 'notes', label: 'Notes', type: 'multiline', span: 12, minRows: 2, maxRows: 6 },
     {
+      section: 'Prescribed medicines',
       name: 'items',
       label: 'Prescribed medicines',
       type: 'items',
@@ -337,22 +354,25 @@ export const SurgeryPage = page({
     { key: 'ot_room', label: 'Theatre', options: ['OT-1', 'OT-2', 'OT-3', 'OT-4', 'OT-5', 'OT-6'] },
   ],
   fields: [
-    { name: 'patient', label: 'Patient (ID)', type: 'number', required: true, span: 4 },
-    { name: 'surgeon', label: 'Surgeon (ID)', type: 'number', required: true, span: 4 },
-    { name: 'department', label: 'Department (ID)', type: 'number', span: 4 },
-    { name: 'surgery_name', label: 'Procedure', required: true, span: 8 },
-    { name: 'procedure_code', label: 'Procedure code', span: 4 },
-    { name: 'ot_room', label: 'Theatre', required: true, span: 3 },
-    { name: 'date', label: 'Date', type: 'date', required: true, span: 3 },
-    { name: 'start_time', label: 'Start (HH:MM)', required: true, span: 3 },
-    { name: 'end_time', label: 'End (HH:MM)', span: 3 },
-    { name: 'anesthetist', label: 'Anaesthetist (ID)', type: 'number', span: 4 },
-    { name: 'anesthesia_type', label: 'Anaesthesia type', type: 'select', span: 4, options: ['general', 'spinal', 'epidural', 'regional', 'local', 'sedation'].map((v) => ({ value: v, label: v })) },
-    { name: 'estimated_cost', label: 'Estimated cost', type: 'number', span: 4 },
-    { name: 'status', label: 'Status', type: 'select', span: 6, options: ['scheduled', 'preparing', 'in_progress', 'completed', 'cancelled', 'postponed'].map((v) => ({ value: v, label: v.replaceAll('_', ' ') })) },
-    { name: 'blood_units_reserved', label: 'Blood units reserved', type: 'number', span: 6 },
-    { name: 'pre_op_notes', label: 'Pre-operative notes', multiline: true, span: 12 },
-    { name: 'post_op_notes', label: 'Post-operative notes', multiline: true, span: 12 },
+    { section: 'Patient & procedure', name: 'patient', label: 'Patient', type: 'autocomplete', required: true, span: 6, lookup: patientLookup, placeholder: 'Search patient…' },
+    { section: 'Patient & procedure', name: 'surgeon', label: 'Surgeon', type: 'autocomplete', required: true, span: 6, lookup: doctorLookup, placeholder: 'Search doctor…' },
+    { section: 'Patient & procedure', name: 'department', label: 'Department', type: 'autocomplete', span: 6, lookup: departmentLookup, placeholder: 'Search department…' },
+    { section: 'Patient & procedure', name: 'surgery_name', label: 'Procedure', required: true, span: 6 },
+    { section: 'Patient & procedure', name: 'procedure_code', label: 'Procedure code', span: 12 },
+
+    { section: 'Theatre schedule', name: 'ot_room', label: 'Theatre', required: true, span: 3 },
+    { section: 'Theatre schedule', name: 'date', label: 'Date', type: 'date', required: true, span: 3 },
+    { section: 'Theatre schedule', name: 'start_time', label: 'Start (HH:MM)', required: true, span: 3 },
+    { section: 'Theatre schedule', name: 'end_time', label: 'End (HH:MM)', span: 3 },
+
+    { section: 'Anaesthesia & cost', name: 'anesthetist', label: 'Anaesthetist (ID)', type: 'number', span: 6 },
+    { section: 'Anaesthesia & cost', name: 'anesthesia_type', label: 'Anaesthesia type', type: 'select', span: 6, options: ['general', 'spinal', 'epidural', 'regional', 'local', 'sedation'] },
+    { section: 'Anaesthesia & cost', name: 'estimated_cost', label: 'Estimated cost', type: 'number', span: 6 },
+    { section: 'Anaesthesia & cost', name: 'blood_units_reserved', label: 'Blood units reserved', type: 'number', span: 6 },
+
+    { section: 'Outcome', name: 'status', label: 'Status', type: 'select', span: 12, options: ['scheduled', 'preparing', 'in_progress', 'completed', 'cancelled', 'postponed'] },
+    { section: 'Outcome', name: 'pre_op_notes', label: 'Pre-operative notes', type: 'multiline', span: 12, minRows: 2, maxRows: 8 },
+    { section: 'Outcome', name: 'post_op_notes', label: 'Post-operative notes', type: 'multiline', span: 12, minRows: 2, maxRows: 8 },
   ],
   detailFields: [
     { name: 'surgery_id', label: 'Surgery' },
